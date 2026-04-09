@@ -1,16 +1,25 @@
-/**
- * Backup & Restore Service
- * Provider: S3-compatible storage (AWS S3, MinIO, Backblaze B2)
- * Configure via .env: S3_BUCKET, S3_REGION, S3_ACCESS_KEY, S3_SECRET_KEY
- */
+import * as FileSystem from 'expo-file-system';
 import { DocumentItem } from '../types/document';
 
-export async function backupDocuments(documents: DocumentItem[]): Promise<void> {
-  // TODO: implement S3 upload
-  console.log(`Backup placeholder: ${documents.length} documents`);
+export async function exportBackup(documents: DocumentItem[]): Promise<string> {
+  const payload = JSON.stringify(
+    {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      documents,
+    },
+    null,
+    2
+  );
+
+  const dir = FileSystem.documentDirectory ?? FileSystem.cacheDirectory ?? '';
+  const path = `${dir}knipexilino-backup-${Date.now()}.json`;
+  await FileSystem.writeAsStringAsync(path, payload, { encoding: FileSystem.EncodingType.UTF8 });
+  return path;
 }
 
-export async function restoreDocuments(): Promise<DocumentItem[]> {
-  // TODO: implement S3 download + decrypt
-  return [];
+export async function importBackupFromFile(path: string): Promise<DocumentItem[]> {
+  const raw = await FileSystem.readAsStringAsync(path);
+  const parsed = JSON.parse(raw);
+  return Array.isArray(parsed.documents) ? (parsed.documents as DocumentItem[]) : [];
 }
