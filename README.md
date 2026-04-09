@@ -12,12 +12,13 @@ Scans, imports and manages documents — with OCR, automatic deadline detection,
 |---|---|
 | App framework | Expo ~53 + Expo Router ~5 |
 | Language | TypeScript ~5.8 |
-| State | Zustand ^5 + AsyncStorage |
+| State | Zustand ^5 + AsyncStorage (persisted) |
 | Build | EAS Build (preview APK / production AAB) |
-| OCR | Tesseract (local) or Google Vision API |
-| AI | OpenAI / Anthropic / Gemini |
-| Translation | DeepL API |
+| OCR | Google Vision API / Tesseract fallback |
+| AI | OpenRouter (Mistral, GPT-4o, Claude, Llama …) |
+| Translation | DeepL API → OpenRouter fallback |
 | Backup | expo-file-system (local JSON export) |
+| Security | expo-secure-store for all API keys |
 
 ---
 
@@ -25,29 +26,29 @@ Scans, imports and manages documents — with OCR, automatic deadline detection,
 
 ```
 app/
-  _layout.tsx          Root stack
-  search.tsx           Semantic search screen
+  _layout.tsx              Root stack
+  search.tsx               Semantic search screen
   (tabs)/
-    _layout.tsx        Tab navigation
-    index.tsx          Home dashboard
-    documents.tsx      Document list
-    scan.tsx           Camera / file import
-    settings.tsx       API keys, backup, vault
-  document/[id].tsx    Detail + AI actions
+    _layout.tsx            Tab navigation
+    index.tsx              Home dashboard
+    documents.tsx          Document list + live search
+    scan.tsx               Camera / file import → OCR
+    settings.tsx           API keys, model select, backup, vault
+  document/[id].tsx        Detail + AI actions
 
 src/
   types/document.ts
-  store/documentStore.ts
+  store/documentStore.ts   Zustand + AsyncStorage persist
   data/mockDocuments.ts
   services/
-    ai.ts              Summary, reply, translation, embedding
-    ocr.ts             Image/PDF OCR
-    deadline.ts        Date detection
-    translation.ts     DeepL adapter
-    search.ts          Keyword + semantic search
-    backup.ts          JSON export/import via file system
-    vault.ts           AES-256 encryption placeholder
-    email.ts           IMAP/SMTP integration placeholder
+    ai.ts                  OpenRouter (summary, reply, translation)
+    ocr.ts                 Google Vision API / placeholder
+    deadline.ts            Date extraction
+    translation.ts         DeepL → AI fallback
+    search.ts              Keyword search (embedding-ready)
+    backup.ts              JSON export via expo-file-system
+    vault.ts               Private flag + AES placeholder
+    email.ts               SMTP placeholder
 ```
 
 ---
@@ -60,12 +61,25 @@ npm install
 
 # 2. Copy env file
 cp .env.example .env
-# Fill in API keys for OpenAI / DeepL / Google Vision etc.
+# Keys go into Settings screen → saved to expo-secure-store
 
 # 3. Start Expo dev server
 npx expo start
 # Scan QR code with Expo Go on Android
 ```
+
+---
+
+## API Keys Setup (in-app)
+
+All keys are stored securely via `expo-secure-store` — never in code or `.env` at runtime:
+
+1. Open the app → **Einstellungen** tab
+2. Enter your **OpenRouter API Key** (`sk-or-v1-...`)
+3. Pick a model (Mistral 7B is free on OpenRouter)
+4. Optionally add **Google Vision Key** for real OCR
+5. Optionally add **DeepL Key** for premium translation
+6. Tap **Keys speichern**
 
 ---
 
@@ -75,22 +89,8 @@ npx expo start
 npm install -g eas-cli
 eas login
 eas build -p android --profile preview
+# → Downloads a ready-to-install APK
 ```
-
-Requires an [Expo account](https://expo.dev) and `eas.json` (included).
-
----
-
-## Environment variables
-
-See `.env.example` for all required keys:
-
-- `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY`
-- `GOOGLE_VISION_API_KEY`
-- `DEEPL_API_KEY`
-- `VAULT_PASSPHRASE`
-- `S3_*` for cloud backup
-- `SMTP_*` for email
 
 ---
 
@@ -98,8 +98,9 @@ See `.env.example` for all required keys:
 
 - [x] v0.1.0 — App scaffold, navigation, services
 - [x] v0.2.0 — Persistent store, real scan/import, full detail screen
-- [x] v0.3.0 — EAS build, search screen, backup export, zustand persist
-- [ ] v0.4.0 — Real OCR (Tesseract / Vision API)
-- [ ] v0.5.0 — Real AI (OpenAI / Anthropic)
-- [ ] v0.6.0 — Vault encryption, secure storage
-- [ ] v1.0.0 — APK on Google Play / F-Droid
+- [x] v0.3.0 — EAS build, search screen, backup export, zustand persist, CI
+- [x] v0.4.0 — Real OpenRouter AI, Google Vision OCR, secure key storage
+- [ ] v0.5.0 — Semantic search with embeddings
+- [ ] v0.6.0 — AES-256 vault encryption
+- [ ] v0.7.0 — Email / IMAP integration
+- [ ] v1.0.0 — APK release
