@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Knipexilino",
+    "slug": "knipexilino-android",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "knipexilino",
+    "userInterfaceStyle": "dark",
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0b0f14"
+      },
+      "package": "com.machete88.knipexilino"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
